@@ -95,7 +95,7 @@ model.compile(loss="categorical_crossentropy",
               metrics=['accuracy'])
 
 # early stopping 설정
-early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
 
 # Model fit
 hist = model.fit(x_train, y_train,
@@ -116,8 +116,8 @@ plt.savefig('results_resnet50_based_model.png')
 res = model.predict(x_test[0:1])
 print(res)
 
-plt.bar(range(10), res[0], color='red')
-plt.bar(np.array(range(10)) + 0.35, y_test[0])
+plt.bar(range(2), res[0], color='red')
+plt.bar(np.array(range(2)) + 0.35, y_test[0])
 plt.savefig('test1.png')
 
 loss, acc = model.evaluate(x_test, y_test, verbose=2)
@@ -132,8 +132,8 @@ new_model = tf.keras.models.load_model('./model/resnet50_based_model.h5')
 res = new_model.predict( x_test[3:4] ) 
 print(res.shape)
 print(res[0])
-plt.bar(range(10), res[0], color='red')
-plt.bar(np.array(range(10)) + 0.35, y_test[3])
+plt.bar(range(2), res[0], color='red')
+plt.bar(np.array(range(2)) + 0.35, y_test[3])
 plt.savefig('test2.png')
 
 loss, acc = new_model.evaluate(x_test, y_test, verbose=2)

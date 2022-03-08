@@ -138,3 +138,8 @@ plt.savefig('test2.png')
 
 loss, acc = new_model.evaluate(x_test, y_test, verbose=2)
 print(loss, acc)
+
+'''
+Code With Me
+https://code-with-me.global.jetbrains.com/bTTKU9cXGMgnVZGTwG3n_g#p=PC&fp=EBE07267AFCA325353DD416845976E065786501B49C9DB7693FF91ED070DE53A
+'''

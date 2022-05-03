@@ -147,3 +147,4 @@ checkpoint
 events*
 *.npy
 *.h5
+*.pickle

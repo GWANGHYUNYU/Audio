@@ -140,6 +140,7 @@ runs/
 socket_server/
 dataset/
 checkpoint
+pickle_data
 
 # files
 *.png

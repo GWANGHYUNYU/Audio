@@ -33,7 +33,7 @@ print(y_test.shape)
 
 
 class Random_Finetune_ResNet50():
-    def __init__(self, input_shape):
+    def __init__(self, input_shape, freezing_layer_flag):
 
         self.fitness = 0
         # self.loss = 1000
@@ -42,6 +42,7 @@ class Random_Finetune_ResNet50():
         self.base_model = tf.keras.applications.ResNet50(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
         sample_arr = [True, False]
         self.bool_arr = np.random.choice(sample_arr, size=len(self.base_model.layers))
+        self.bool_arr[:freezing_layer_flag] = False
         self.update_trainable()
         # self.base_model.trainable = True
         # for idx, i in enumerate(self.base_model.layers):
@@ -90,7 +91,7 @@ class Random_Finetune_ResNet50():
                         callbacks=[early])
         return history
 
-def crossover_sequentail(iteration, winner_acc, winner_bool_arr, class_instance_arr):
+def crossover_sequentail(iteration, winner_acc, winner_bool_arr, class_instance_arr, freezing_flag):
     
     # max part는 추후 수정 예정
     max = len(winner_acc)
@@ -105,7 +106,7 @@ def crossover_sequentail(iteration, winner_acc, winner_bool_arr, class_instance_
         b_genome = deepcopy(winner_bool_arr[i-1])
 
         new_genome = []
-        cut = np.random.randint(0, len(winner_bool_arr[0]))
+        cut = np.random.randint(freezing_flag, len(winner_bool_arr[0]))
         new_genome.extend(a_genome[:cut])
         new_genome.extend(b_genome[cut:])
 
@@ -117,7 +118,7 @@ def crossover_sequentail(iteration, winner_acc, winner_bool_arr, class_instance_
         print('Generation #%s, Crossover_sequence Genome #%s Created Bool_Array: %s layers, Predicted Fitness: %s, Done' % (n_gen, i, len(children), genome.fitness))
 
 
-def crossover_random(iteration, winner_acc, winner_bool_arr, class_instance_arr):
+def crossover_random(iteration, winner_acc, winner_bool_arr, class_instance_arr, freezing_flag):
 
     # max part는 추후 수정 예정
     max = len(winner_acc)
@@ -128,7 +129,7 @@ def crossover_random(iteration, winner_acc, winner_bool_arr, class_instance_arr)
     
     for i, genome in enumerate(class_instance_arr):
 
-        flag = np.random.randint(0, len(winner_acc), size=2)
+        flag = np.random.randint(freezing_flag, len(winner_acc), size=2)
 
         a_genome = deepcopy(winner_bool_arr[flag[0]])
         b_genome = deepcopy(winner_bool_arr[flag[-1]])
@@ -145,7 +146,7 @@ def crossover_random(iteration, winner_acc, winner_bool_arr, class_instance_arr)
 
         print('Generation #%s, Crossover_Random Genome #%s Created Bool_Array: %s layers, Predicted Fitness: %s, Done' % (n_gen, i, len(children), genome.fitness))
 
-def mutation(winner_bool_arr, class_instance_arr):
+def mutation(winner_bool_arr, class_instance_arr, freezing_layer_flag):
     
     for i, genome in enumerate(class_instance_arr):
 
@@ -158,7 +159,7 @@ def mutation(winner_bool_arr, class_instance_arr):
             flag = np.random.randint(0, len(winner_bool_arr[0]))
             flag = round(flag*PROB_MUTATION)
 
-            mutation_arr = random.sample(range(0, len(winner_bool_arr[0])), flag)
+            mutation_arr = random.sample(range(freezing_layer_flag, len(winner_bool_arr[0])), flag)
             mutation_arr_sort = sorted(mutation_arr)
             
             for idx in mutation_arr_sort:
@@ -180,11 +181,11 @@ PROB_MUTATION = 0.04
 
 epoch = 5
 batch_size =256
-save_path = 'D:\GH\Audio\GA\pickle_data\\0510'
+save_path = 'D:\GH\Audio\GA\pickle_data\\0512_100freezing'
 
 # generate 1st population
-genomes = [Random_Finetune_ResNet50((32,32)) for _ in range(N_POPULATION)]
-nw_genomes = [Random_Finetune_ResNet50((32,32)) for _ in range(N_POPULATION)]
+genomes = [Random_Finetune_ResNet50((32,32), 100) for _ in range(N_POPULATION)]
+nw_genomes = [Random_Finetune_ResNet50((32,32), 100) for _ in range(N_POPULATION)]
 
 n_gen = 0
 
@@ -255,11 +256,11 @@ while True:
     winner_bool_arr = bool_arr[:N_BEST]
 
     # CROSSOVER with Sequantial
-    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[:N_CHILDREN])
-    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[N_CHILDREN:])
+    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[:N_CHILDREN], 100)
+    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[N_CHILDREN:], 100)
 
     # mutation
-    mutation(winner_bool_arr, nw_genomes)
+    mutation(winner_bool_arr, nw_genomes, 100)
 
     # 유전 연산 결과를 업데이트하는 과정
     process_accuracy = np.array([])

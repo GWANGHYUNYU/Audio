@@ -4,7 +4,10 @@ from keras import utils
 from keras.models import Sequential, Model
 from keras.layers import Conv2D, MaxPool2D, Input, Dense, Flatten, Concatenate
 from keras.callbacks import ModelCheckpoint
+
 from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.mobilenet import MobileNet
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 
 import pandas as pd
 import numpy as np
@@ -33,14 +36,14 @@ print(x_test.shape)
 print(y_test.shape)
 
 
-class Random_Finetune_VGG():
+class Random_Finetune_MobileNet():
     def __init__(self, input_shape, freezing_layer_flag):
 
         self.fitness = 0
         # self.loss = 1000
         
         IMG_SHAPE = input_shape + (3,)
-        self.base_model = VGG16(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        self.base_model = MobileNet(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
         # self.base_model = tf.keras.applications.ResNet50(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
         sample_arr = [True, False]
         self.bool_arr = np.random.choice(sample_arr, size=len(self.base_model.layers))
@@ -183,11 +186,11 @@ PROB_MUTATION = 0.04
 
 epoch = 5
 batch_size =256
-save_path = 'D:\GH\Audio\GA\pickle_data\\0517_VGG16_10_FREEZE'
+save_path = 'D:\GH\Audio\GA\pickle_data\\0519_MobileNet_43_FREEZE'
 
 # generate 1st population
-genomes = [Random_Finetune_VGG((32,32), 10) for _ in range(N_POPULATION)]
-nw_genomes = [Random_Finetune_VGG((32,32), 10) for _ in range(N_POPULATION)]
+genomes = [Random_Finetune_MobileNet((32,32), 43) for _ in range(N_POPULATION)]
+nw_genomes = [Random_Finetune_MobileNet((32,32), 43) for _ in range(N_POPULATION)]
 
 n_gen = 0
 
@@ -258,11 +261,11 @@ while True:
     winner_bool_arr = bool_arr[:N_BEST]
 
     # CROSSOVER with Sequantial
-    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[:N_CHILDREN], 10)
-    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[N_CHILDREN:], 10)
+    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[:N_CHILDREN], 43)
+    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[N_CHILDREN:], 43)
 
     # mutation
-    mutation(winner_bool_arr, nw_genomes, 10)
+    mutation(winner_bool_arr, nw_genomes, 43)
 
     # 유전 연산 결과를 업데이트하는 과정
     process_accuracy = np.array([])

@@ -53,7 +53,10 @@ class Random_Finetune_ResNet50():
         if bool_arr is not None: 
             self.bool_arr = bool_arr
         self.base_model.trainable = True
-        for idx, i in enumerate(self.base_model.layers):
+        for idx, i in enumerate(self.base_model.layers[:7]):
+            i.trainable = self.bool_arr[idx]
+
+        for idx, i in enumerate(self.base_model.layers[7:]):
             if i.name[:12] == 'conv2_block1':
                 if self.bool_arr[7] == True:
                     i.trainable = True
@@ -280,7 +283,7 @@ PROB_MUTATION = 0.04
 
 epoch = 5
 batch_size =256
-save_path = 'D:\GH\Audio\GA\pickle_data\\0523_ResNet_Blocki_NO_FREEZE'
+save_path = 'D:\GH\Audio\GA\pickle_data\\0526_ResNet_Block_NO_FREEZE_from0'
 
 # generate 1st population
 genomes = [Random_Finetune_ResNet50((32,32), 0) for _ in range(N_POPULATION)]

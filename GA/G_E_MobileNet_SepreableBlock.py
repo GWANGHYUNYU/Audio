@@ -57,7 +57,10 @@ class Random_Finetune_MobileNet():
         if bool_arr is not None: 
             self.bool_arr = bool_arr
         self.base_model.trainable = True
-        for idx, i in enumerate(self.base_model.layers):
+        for idx, i in enumerate(self.base_model.layers[:4]):
+            i.trainable = self.bool_arr[idx]
+
+        for idx, i in enumerate(self.base_model.layers[4:]):
             if i.name[7:9] == '_1' and idx == 4:
                 if self.bool_arr[4] == True:
                     i.trainable = True
@@ -276,11 +279,11 @@ PROB_MUTATION = 0.04
 
 epoch = 5
 batch_size =256
-save_path = 'D:\GH\Audio\GA\pickle_data\\0525_MobileNet_Block_NO_FREEZE'
+save_path = 'D:\GH\Audio\GA\pickle_data\\0527_MobileNet_Block_NO_FREEZE_from0'
 
 # generate 1st population
-genomes = [Random_Finetune_MobileNet((32,32), 43) for _ in range(N_POPULATION)]
-nw_genomes = [Random_Finetune_MobileNet((32,32), 43) for _ in range(N_POPULATION)]
+genomes = [Random_Finetune_MobileNet((32,32), 0) for _ in range(N_POPULATION)]
+nw_genomes = [Random_Finetune_MobileNet((32,32), 0) for _ in range(N_POPULATION)]
 
 n_gen = 0
 
@@ -351,11 +354,11 @@ while True:
     winner_bool_arr = bool_arr[:N_BEST]
 
     # CROSSOVER with Sequantial
-    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[:N_CHILDREN], 43)
-    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[N_CHILDREN:], 43)
+    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[:N_CHILDREN], 0)
+    crossover_sequentail(N_CHILDREN, winner_acc, winner_bool_arr, nw_genomes[N_CHILDREN:], 0)
 
     # mutation
-    mutation(winner_bool_arr, nw_genomes, 43)
+    mutation(winner_bool_arr, nw_genomes, 0)
 
     # 유전 연산 결과를 업데이트하는 과정
     process_accuracy = np.array([])

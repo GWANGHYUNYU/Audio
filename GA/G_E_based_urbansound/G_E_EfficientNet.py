@@ -18,6 +18,15 @@ from copy import deepcopy
 import pickle
 import time
 
+from tensorflow.keras.applications.efficientnet import EfficientNetB0
+from tensorflow.keras.applications.efficientnet import EfficientNetB1
+from tensorflow.keras.applications.efficientnet import EfficientNetB2
+from tensorflow.keras.applications.efficientnet import EfficientNetB3
+from tensorflow.keras.applications.efficientnet import EfficientNetB4
+from tensorflow.keras.applications.efficientnet import EfficientNetB5
+from tensorflow.keras.applications.efficientnet import EfficientNetB6
+from tensorflow.keras.applications.efficientnet import EfficientNetB7
+
 np.random.seed(5)
 
 # Load dataset
@@ -81,19 +90,30 @@ print(x_test_shuffle.shape)
 print(y_test_shuffle.shape)
 
 
-class Random_Finetune_ResNet():
-    def __init__(self, input_shape, freezing_layer_flag, type=50):
+class Random_Finetune_EfficientNet():
+    def __init__(self, input_shape, freezing_layer_flag, type=0):
 
         self.fitness = 0
         # self.loss = 1000
         
-        self.IMG_SHAPE = input_shape + (3,)
-        if type == 101:
-            self.base_model = tf.keras.applications.resnet.ResNet101(input_shape=self.IMG_SHAPE, include_top=False, weights='imagenet')
-        elif type == 152:            
-            self.base_model = tf.keras.applications.resnet.ResNet152(input_shape=self.IMG_SHAPE, include_top=False, weights='imagenet')
-        else:
-            self.base_model = tf.keras.applications.resnet.ResNet50(input_shape=self.IMG_SHAPE, include_top=False, weights='imagenet')
+        IMG_SHAPE = input_shape + (3,)
+        if type == 0:
+            self.base_model = EfficientNetB0(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        elif type == 1:            
+            self.base_model = EfficientNetB1(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        elif type == 2:
+            self.base_model = EfficientNetB2(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        elif type == 3:            
+            self.base_model = EfficientNetB3(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        elif type == 4:
+            self.base_model = EfficientNetB4(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')    
+        elif type == 5:
+            self.base_model = EfficientNetB5(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        elif type == 6:            
+            self.base_model = EfficientNetB6(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        elif type == 7:
+            self.base_model = EfficientNetB7(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')  
+
         sample_arr = [True, False]
         self.bool_arr = np.random.choice(sample_arr, size=len(self.base_model.layers))
         self.bool_arr[:freezing_layer_flag] = False
@@ -234,18 +254,17 @@ N_BEST = 5
 N_CHILDREN = 5
 PROB_MUTATION = 0.04
 
-Total_layer = 345       # 175 / 345 / 515
 Freezing_layer = 0      # round(Total_layer/2)
-ResNet_type = 101       # 50 / 101 /152
+EfficientNet_type = 0   # 0 / 1 / 2 / 3 / 4 / 5 / 6 / 7
 
 lr = 0.0001
 epoch = 5
 batch_size = 32
-save_path = 'D:\GH\Audio\GA\pickle_data\\UrbanSound8K\\0620_ResNet_101_NO_FREEZE'
+save_path = 'D:\GH\Audio\GA\pickle_data\\UrbanSound8K\\0622_EfficientNet_NO_FREEZE'
 
 # generate 1st population
-genomes = [Random_Finetune_ResNet(IMG_SHAPE, Freezing_layer, ResNet_type) for _ in range(N_POPULATION)]
-nw_genomes = [Random_Finetune_ResNet(IMG_SHAPE, Freezing_layer, ResNet_type) for _ in range(N_POPULATION)]
+genomes = [Random_Finetune_EfficientNet(IMG_SHAPE, EfficientNet_type) for _ in range(N_POPULATION)]
+nw_genomes = [Random_Finetune_EfficientNet(IMG_SHAPE, EfficientNet_type) for _ in range(N_POPULATION)]
 
 n_gen = 0
 
@@ -278,14 +297,14 @@ while True:
     for i, genome in enumerate(genomes):
 
         genome = genomes[i]
-        model = genome.forward(lr)
+        model = genome.forward(0.0001)
         history = genome.train_model(model, x_train, y_train, (x_test, y_test), epoch, batch_size)
         fitness = history.history['val_accuracy']
         sorted_fitness = sorted(fitness, reverse=True)
         genome.fitness = sorted_fitness[0]
 
         print('Generation #%s, Genome #%s, Fitness: %s, Best Fitness: %s' % (n_gen, i, fitness, genome.fitness))
-    
+
     print("===== Generaton #%s\t Processing time : %s seconds =====" % (n_gen, time.time() - startGenomes))    # 현재시각 - 시작시간 = 실행 시간
 
     for i, genome in enumerate(genomes):
@@ -340,7 +359,7 @@ while True:
     process_bool_arr = np.asarray(process_bool_arr)
 
     print("===== Generaton #%s\t Total Processing time : %s seconds =====" % (n_gen, time.time() - startGenomes))    # 현재시각 - 시작시간 = 실행 시간
-    
+
     print(" 유전연산에 대한 Freezing, Trainable Layer 서치 완료 및 Next Generation 준비 ")
     # print(process_accuracy.shape)
     # print(process_bool_arr.shape)

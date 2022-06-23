@@ -4,6 +4,7 @@ from keras import utils
 from keras.models import Sequential, Model
 from keras.layers import Conv2D, MaxPool2D, Input, Dense, Flatten, Concatenate
 from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.applications.vgg16 import VGG16
 
 import pandas as pd
 import numpy as np
@@ -22,48 +23,34 @@ np.random.seed(5)
 
 # Load dataset
 
-load_path = 'D:\GH\Audio\dataset\preprocess_data\hospital_alarm\zero_pad_preprocess'
-# load_path = 'D:\GH\Audio\dataset\preprocess_data\hospital_alarm\\repeat_pad_preprocess'
+load_path = 'D:\GH\Audio\dataset\\UrbanSound8K\\audio\\np_data'
 
 '''
-loaded = np.load('파일명.npz')
-loaded['spectrogram']
-loaded['Mel_spectrogram']
-loaded['Log_Mel_spectrogram']
-loaded['mfcc']
-loaded['delta_mfcc']
+loaded = np.load('파일명.npz', allow_pickle=True)
+(128, 173, 1)
 '''
 
-for idx, file in enumerate(os.listdir(load_path)):
-    filepath = os.path.join(load_path, file)
-    loaded = np.load(filepath)
-    print('class number :',idx, file[:-4])
-    x = loaded['Log_Mel_spectrogram']
-    y = np.zeros((x.shape[0],1), dtype=np.int8)
-    y = y + idx
-    print(x.shape)
-    print(y.shape)
-    ratio = round(x.shape[0]*0.2)   # 각 클래스별 나누는 비율
-    flag = x.shape[0]-ratio
+train_path = os.path.join(load_path, 'fold1train.npy')
+test_path = os.path.join(load_path, 'fold1test.npy')
 
-    if idx == 0:
-        x_train = x[:flag]
-        y_train = y[:flag]
-        x_test = x[flag:]
-        y_test = y[flag:]
-    else:
-        x_train = np.vstack((x_train, x[:flag]))
-        y_train = np.vstack((y_train, y[:flag]))
-        x_test = np.vstack((x_test, x[flag:]))
-        y_test = np.vstack((y_test, y[flag:]))
+train_data = np.load(train_path, allow_pickle=True)
+test_data = np.load(test_path, allow_pickle=True)
+
+x_train = train_data[:, -1]
+y_train = train_data[:, 1]
+x_test = test_data[:, -1]
+y_test = test_data[:, 1]
+
+x_train = np.stack(x_train, axis=0)
+x_test = np.stack(x_test, axis=0)
 
 x_train = x_train[...,np.newaxis]
 x_test = x_test[...,np.newaxis]
 y_train = y_train.reshape((-1,))
 y_test = y_test.reshape((-1,))
 
-# 배열의 원소 개수만큼 인덱스 배열을 만든 후 
-# 무작위로 뒤섞어 줍니다. 
+# 배열의 원소 개수만큼 인덱스 배열을 만든 후
+# 무작위로 뒤섞어 줍니다.
 idx_train = np.arange(x_train.shape[0])
 idx_test = np.arange(x_test.shape[0])
 # print(idx)
@@ -75,25 +62,22 @@ y_train_shuffle = y_train[idx_train]
 x_test_shuffle = x_test[idx_test]
 y_test_shuffle = y_test[idx_test]
 
+print('Train, Test Data Shape')
 print(x_train_shuffle.shape)
 print(y_train_shuffle.shape)
 print(x_test_shuffle.shape)
 print(y_test_shuffle.shape)
 
 
-class Random_Finetune_ResNet():
-    def __init__(self, input_shape, freezing_layer_flag, type=50):
+class Random_Finetune_VGG():
+    def __init__(self, input_shape, freezing_layer_flag):
 
         self.fitness = 0
         # self.loss = 1000
         
-        self.IMG_SHAPE = input_shape + (3,)
-        if type == 101:
-            self.base_model = tf.keras.applications.resnet.ResNet101(input_shape=self.IMG_SHAPE, include_top=False, weights='imagenet')
-        elif type == 152:            
-            self.base_model = tf.keras.applications.resnet.ResNet152(input_shape=self.IMG_SHAPE, include_top=False, weights='imagenet')
-        else:
-            self.base_model = tf.keras.applications.resnet.ResNet50(input_shape=self.IMG_SHAPE, include_top=False, weights='imagenet')
+        IMG_SHAPE = input_shape + (3,)
+        self.base_model = VGG16(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
+        # self.base_model = tf.keras.applications.ResNet50(input_shape=IMG_SHAPE, include_top=False, weights='imagenet')
         sample_arr = [True, False]
         self.bool_arr = np.random.choice(sample_arr, size=len(self.base_model.layers))
         self.bool_arr[:freezing_layer_flag] = False
@@ -110,14 +94,14 @@ class Random_Finetune_ResNet():
             i.trainable = self.bool_arr[idx]
         
     def forward(self, learning_rate=0.001):
-        inputs = Input((128, 311, 1))
+        inputs = Input((128, 173, 1))
         first_conv_layer = Conv2D(3, 1, padding='same', activation=None)(inputs)
 
         x = self.base_model(first_conv_layer, training = False)
         x = Flatten()(x)
-        outputs = Dense(8, activation = 'softmax')(x)
+        outputs = Dense(10, activation = 'softmax')(x)
 
-        model = tf.keras.Model(inputs, outputs, name="HospitalAlarmSound_resnet_model")
+        model = tf.keras.Model(inputs, outputs, name="UrbanSound8K__VGG_model")
 
         # 'categorical_crossentropy'은 y[0]=[0, 0, 0, 0, 0, 0, 0, 0, 1], y[1, 0, 0, 0, 0, 0, 0, 0, 0]과 같이 one-hot-encoding label일 경우에 사용
         model.compile(loss="sparse_categorical_crossentropy", 
@@ -227,25 +211,23 @@ def mutation(winner_bool_arr, class_instance_arr, freezing_layer_flag):
             print('Generation #%s, Genome #%s, Mutation Happened!!! \t size: %s, Mutation_Array: %s, Done' % (n_gen, i, flag, mutation_arr_sort))
 
 # Parameters
-IMG_SHAPE = (128, 311)
+IMG_SHAPE = (128, 173)
 
-N_POPULATION = 10
-N_BEST = 5
-N_CHILDREN = 5
+N_POPULATION = 20
+N_BEST = 10
+N_CHILDREN = 10
 PROB_MUTATION = 0.04
 
-Total_layer = 345       # 175 / 345 / 515
 Freezing_layer = 0      # round(Total_layer/2)
-ResNet_type = 101       # 50 / 101 /152
 
 lr = 0.0001
 epoch = 5
-batch_size = 32
-save_path = 'D:\GH\Audio\GA\pickle_data\\UrbanSound8K\\0620_ResNet_101_NO_FREEZE'
+batch_size = 64
+save_path = 'D:\GH\Audio\GA\pickle_data\\UrbanSound8K\\0623_VGG_NO_FREEZE'
 
 # generate 1st population
-genomes = [Random_Finetune_ResNet(IMG_SHAPE, Freezing_layer, ResNet_type) for _ in range(N_POPULATION)]
-nw_genomes = [Random_Finetune_ResNet(IMG_SHAPE, Freezing_layer, ResNet_type) for _ in range(N_POPULATION)]
+genomes = [Random_Finetune_VGG(IMG_SHAPE, Freezing_layer) for _ in range(N_POPULATION)]
+nw_genomes = [Random_Finetune_VGG(IMG_SHAPE, Freezing_layer) for _ in range(N_POPULATION)]
 
 n_gen = 0
 
@@ -285,7 +267,7 @@ while True:
         genome.fitness = sorted_fitness[0]
 
         print('Generation #%s, Genome #%s, Fitness: %s, Best Fitness: %s' % (n_gen, i, fitness, genome.fitness))
-    
+
     print("===== Generaton #%s\t Processing time : %s seconds =====" % (n_gen, time.time() - startGenomes))    # 현재시각 - 시작시간 = 실행 시간
 
     for i, genome in enumerate(genomes):
@@ -340,7 +322,7 @@ while True:
     process_bool_arr = np.asarray(process_bool_arr)
 
     print("===== Generaton #%s\t Total Processing time : %s seconds =====" % (n_gen, time.time() - startGenomes))    # 현재시각 - 시작시간 = 실행 시간
-    
+
     print(" 유전연산에 대한 Freezing, Trainable Layer 서치 완료 및 Next Generation 준비 ")
     # print(process_accuracy.shape)
     # print(process_bool_arr.shape)

@@ -62,11 +62,17 @@ y_train_shuffle = y_train[idx_train]
 x_test_shuffle = x_test[idx_test]
 y_test_shuffle = y_test[idx_test]
 
-print('Train, Test Data Shape')
-print(x_train_shuffle.shape)
-print(y_train_shuffle.shape)
-print(x_test_shuffle.shape)
-print(y_test_shuffle.shape)
+# TensorFlow에서 읽을 수 있는 np.astype으로 변경
+x_train = np.asarray(x_train_shuffle).astype(np.float64)
+y_train = np.asarray(y_train_shuffle).astype(np.int64)
+x_test = np.asarray(x_test_shuffle).astype(np.float64)
+y_test = np.asarray(y_test_shuffle).astype(np.int64)
+
+print('Train/Test Dataset Shape')
+print(x_train.shape)
+print(y_train.shape)
+print(x_test.shape)
+print(y_test.shape)
 
 
 class Random_Finetune_VGG():
@@ -213,9 +219,9 @@ def mutation(winner_bool_arr, class_instance_arr, freezing_layer_flag):
 # Parameters
 IMG_SHAPE = (128, 173)
 
-N_POPULATION = 20
-N_BEST = 10
-N_CHILDREN = 10
+N_POPULATION = 16
+N_BEST = 8
+N_CHILDREN = 8
 PROB_MUTATION = 0.04
 
 Freezing_layer = 0      # round(Total_layer/2)

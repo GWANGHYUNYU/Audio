@@ -26,48 +26,34 @@ np.random.seed(5)
 
 # Load dataset
 
-load_path = 'D:\GH\Audio\dataset\preprocess_data\hospital_alarm\zero_pad_preprocess'
-# load_path = 'D:\GH\Audio\dataset\preprocess_data\hospital_alarm\\repeat_pad_preprocess'
+load_path = 'D:\GH\Audio\dataset\\UrbanSound8K\\audio\\np_data'
 
 '''
-loaded = np.load('파일명.npz')
-loaded['spectrogram']
-loaded['Mel_spectrogram']
-loaded['Log_Mel_spectrogram']
-loaded['mfcc']
-loaded['delta_mfcc']
+loaded = np.load('파일명.npz', allow_pickle=True)
+(128, 173, 1)
 '''
 
-for idx, file in enumerate(os.listdir(load_path)):
-    filepath = os.path.join(load_path, file)
-    loaded = np.load(filepath)
-    print('class number :',idx, file[:-4])
-    x = loaded['Log_Mel_spectrogram']
-    y = np.zeros((x.shape[0],1), dtype=np.int8)
-    y = y + idx
-    print(x.shape)
-    print(y.shape)
-    ratio = round(x.shape[0]*0.2)   # 각 클래스별 나누는 비율
-    flag = x.shape[0]-ratio
+train_path = os.path.join(load_path, 'fold1train.npy')
+test_path = os.path.join(load_path, 'fold1test.npy')
 
-    if idx == 0:
-        x_train = x[:flag]
-        y_train = y[:flag]
-        x_test = x[flag:]
-        y_test = y[flag:]
-    else:
-        x_train = np.vstack((x_train, x[:flag]))
-        y_train = np.vstack((y_train, y[:flag]))
-        x_test = np.vstack((x_test, x[flag:]))
-        y_test = np.vstack((y_test, y[flag:]))
+train_data = np.load(train_path, allow_pickle=True)
+test_data = np.load(test_path, allow_pickle=True)
+
+x_train = train_data[:, -1]
+y_train = train_data[:, 1]
+x_test = test_data[:, -1]
+y_test = test_data[:, 1]
+
+x_train = np.stack(x_train, axis=0)
+x_test = np.stack(x_test, axis=0)
 
 x_train = x_train[...,np.newaxis]
 x_test = x_test[...,np.newaxis]
 y_train = y_train.reshape((-1,))
 y_test = y_test.reshape((-1,))
 
-# 배열의 원소 개수만큼 인덱스 배열을 만든 후 
-# 무작위로 뒤섞어 줍니다. 
+# 배열의 원소 개수만큼 인덱스 배열을 만든 후
+# 무작위로 뒤섞어 줍니다.
 idx_train = np.arange(x_train.shape[0])
 idx_test = np.arange(x_test.shape[0])
 # print(idx)
@@ -79,10 +65,17 @@ y_train_shuffle = y_train[idx_train]
 x_test_shuffle = x_test[idx_test]
 y_test_shuffle = y_test[idx_test]
 
-print(x_train_shuffle.shape)
-print(y_train_shuffle.shape)
-print(x_test_shuffle.shape)
-print(y_test_shuffle.shape)
+# TensorFlow에서 읽을 수 있는 np.astype으로 변경
+x_train = np.asarray(x_train_shuffle).astype(np.float64)
+y_train = np.asarray(y_train_shuffle).astype(np.int64)
+x_test = np.asarray(x_test_shuffle).astype(np.float64)
+y_test = np.asarray(y_test_shuffle).astype(np.int64)
+
+print('Train/Test Dataset Shape')
+print(x_train.shape)
+print(y_train.shape)
+print(x_test.shape)
+print(y_test.shape)
 
 
 class Random_Finetune_MobileNet():
@@ -110,7 +103,7 @@ class Random_Finetune_MobileNet():
             i.trainable = self.bool_arr[idx]
         
     def forward(self, learning_rate=0.001):
-        inputs = Input((128, 311, 1))
+        inputs = Input((128, 173, 1))
         first_conv_layer = Conv2D(3, 1, padding='same', activation=None)(inputs)
 
         x = self.base_model(first_conv_layer, training = False)
@@ -227,11 +220,11 @@ def mutation(winner_bool_arr, class_instance_arr, freezing_layer_flag):
             print('Generation #%s, Genome #%s, Mutation Happened!!! \t size: %s, Mutation_Array: %s, Done' % (n_gen, i, flag, mutation_arr_sort))
 
 # Parameters
-IMG_SHAPE = (128, 311)
+IMG_SHAPE = (128, 173)
 
-N_POPULATION = 14
-N_BEST = 7
-N_CHILDREN = 7
+N_POPULATION = 20
+N_BEST = 10
+N_CHILDREN = 10
 PROB_MUTATION = 0.04
 
 Freezing_layer = 0      # round(Total_layer/2)
@@ -276,7 +269,7 @@ while True:
     for i, genome in enumerate(genomes):
 
         genome = genomes[i]
-        model = genome.forward(0.0001)
+        model = genome.forward(lr)
         history = genome.train_model(model, x_train, y_train, (x_test, y_test), epoch, batch_size)
         fitness = history.history['val_accuracy']
         sorted_fitness = sorted(fitness, reverse=True)

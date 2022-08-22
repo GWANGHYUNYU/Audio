@@ -145,7 +145,7 @@ checkpoint
 pickle_data
 
 # files
-*.png
+# *.png
 *.jpg
 events*
 *.npy

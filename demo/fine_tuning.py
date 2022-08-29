@@ -136,3 +136,23 @@ def load_best_picklefile(folderfath):
     print(acc_arr.shape, bool_arr.shape)
 
     return acc_arr[max_acc], bool_arr[max_acc]
+
+
+def accuracy_result(history):
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Finetuning preTrained model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper right')
+    plt.show()
+
+
+def loss_result(history):
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Finetuning preTrained model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
